@@ -1,0 +1,198 @@
+# Anton Simulation Setup and Transfer Guide
+
+This document outlines the full workflow for transferring equilibrated NAMD systems to Anton, converting them into `.dms` format, parameterizing with VIPARR, preparing simulation directories, running jobs, and retrieving trajectories.
+
+---
+
+## 🖥️ Step 1: Transfer Files from Frontera (or Other HPC) to Bridges2
+
+Use `sftp` to move the required equilibration and topology files.
+
+```bash
+sftp ashubbar@bridges2.psc.edu
+cd /ocean/projects/mcb160087p/ashubbar
+
+mput step6.6*restart*
+mput step5*
+mput -r toppar
+```
+
+---
+
+## 🔁 Step 2: Transfer Files from Bridges2 to Kollman
+
+Copy your restart, input, and topology files to **Kollman** for `.dms` conversion.
+
+```bash
+scp step6* ashubbar@kollman.psc.edu:/home/ashubbar
+scp step5* ashubbar@kollman.psc.edu:/home/ashubbar
+scp -r toppar ashubbar@anton3.psc.edu:/u/psc/ashubbar
+```
+
+---
+
+## ⚙️ Step 3: Convert NAMD Files to DMS on Kollman
+
+```bash
+ssh ashubbar@kollman.psc.edu
+cp /usr/local/packages/convertNAMDtoDMS.py .
+module load vmd/1.9
+```
+
+Run the conversion:
+
+```bash
+vmd -dispdev text -python -e convertNAMDtoDMS.py -args \
+  -p step5_input.psf \
+  -c step6.6_equilibration.restart.coor \
+  -v step6.6_equilibration.restart.vel \
+  -x step6.6_equilibration.restart.xsc \
+  -o step6.6_equilibration
+```
+
+Transfer the `.dms` files to Anton:
+
+```bash
+scp *dms ashubbar@anton3.psc.edu:/u/psc/ashubbar
+```
+
+---
+
+## 🧩 Step 4: Run VIPARR on Anton
+
+Load the necessary modules:
+
+```bash
+garden load viparr/4.8.5c7/bin
+garden load viparr-ffpublic/1.1.3c7/data
+```
+
+Parameterize the system:
+
+```bash
+viparr -f aa.charmm.c36m \
+       -f lipid.charmm.c36 \
+       -f ions.charmm36 \
+       -f water.tip3p_charmm \
+       step6.6_equilibration.dms \
+       step6.6_equilibration.ff.dms
+```
+
+> **Optional additions:**
+> - For ATP systems: add `-f na.charmm.c36`
+> - For creatine ligand: add `-f crn.viparr`
+
+Build constraints:
+
+```bash
+viparr-build-constraints step6.6_equilibration.ff.dms -o step6.6_equilibration.final.dms
+```
+
+Check and verify the DMS file:
+
+```bash
+export PATH=/gdn/centos7/0001/x3/prefixes/msys/1.9.8c7__4f2dd9bf9617/bin:$PATH
+dms-info step6.6_equilibration.final.dms
+dms-dump step6.6_equilibration.final.dms > equil_dump.txt
+```
+
+---
+
+## 📂 Step 5: Prepare Anton Simulation Directories
+
+For each replicate (e.g., `rep1`, `rep2`, `rep3`):
+
+1. Create a directory:
+   ```bash
+   mkdir rep1 && cd rep1
+   ```
+2. Copy the following files into it:
+   - All `.dms` files  
+   - `base.ark`  
+   - `Run`
+3. Edit:
+   - **Run** → Update job name and working directory path  
+   - **base.ark** → Set desired total simulation time
+
+> 💡 Tip: You may need to create an empty trajectory file before running:
+> ```bash
+> touch trajectory.dcd
+> ```
+
+---
+
+## 🚀 Step 6: Prepare and Submit Job on Anton
+
+```bash
+./Run
+desjob list jobs <jobid>
+desjob prep <jobid>
+# or
+desjob prep /u/psc/ashubbar/{System_DIR}/{Rep#}/workdir.1
+```
+
+Check for success:
+
+```bash
+cd workdir.1
+tail job.log
+# Look for: (v3mdsim prep was successful)
+```
+
+Submit the job:
+
+```bash
+desjob submit <jobid> --account mcb160087p
+# or
+desjob submit /u/psc/ashubbar/anton_run1/workdir.1 --account mcb160087p
+```
+
+Monitor progress:
+
+```bash
+desjob list steps <jobid>
+```
+
+---
+
+## 📤 Step 7: Retrieve Output to Bridges2
+
+On your **local machine**:
+
+```bash
+ssh -X ashubbar@bridges2.psc.edu
+cd /ocean/projects/mcb160087p/ashubbar
+interact --account mcb160087p
+
+module use /opt/packages/anton_modules
+module load anton3mc
+module load trax
+```
+
+Create a directory and copy the DCD script:
+
+```bash
+mkdir 199P_apo_1
+cp dcd.sh 199P_apo_1
+cd 199P_apo_1
+```
+
+Extract Anton output:
+
+```bash
+./dcd.sh <jobid>
+```
+
+---
+
+## ✅ Summary
+
+| Step | Description |
+|------|--------------|
+| 1 | Transfer equilibration and topology files to Bridges2 |
+| 2 | Copy files to Kollman for conversion |
+| 3 | Convert NAMD restart files to `.dms` |
+| 4 | Run VIPARR on Anton to parameterize |
+| 5 | Prepare replicate directories |
+| 6 | Prep and submit jobs using `desjob` |
+| 7 | Retrieve and process trajectories on Bridges2 |
