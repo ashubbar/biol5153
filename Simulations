@@ -8,14 +8,12 @@ This document outlines the full workflow for transferring equilibrated NAMD syst
 
 Use `sftp` to move the required equilibration and topology files.
 
-```bash
 sftp ashubbar@bridges2.psc.edu
 cd /ocean/projects/mcb160087p/ashubbar
 
 mput step6.6*restart*
 mput step5*
 mput -r toppar
-```
 
 ---
 
@@ -23,38 +21,31 @@ mput -r toppar
 
 Copy your restart, input, and topology files to **Kollman** for `.dms` conversion.
 
-```bash
 scp step6* ashubbar@kollman.psc.edu:/home/ashubbar
 scp step5* ashubbar@kollman.psc.edu:/home/ashubbar
 scp -r toppar ashubbar@anton3.psc.edu:/u/psc/ashubbar
-```
 
 ---
 
 ## ⚙️ Step 3: Convert NAMD Files to DMS on Kollman
 
-```bash
 ssh ashubbar@kollman.psc.edu
 cp /usr/local/packages/convertNAMDtoDMS.py .
 module load vmd/1.9
-```
 
 Run the conversion:
 
-```bash
 vmd -dispdev text -python -e convertNAMDtoDMS.py -args \
   -p step5_input.psf \
   -c step6.6_equilibration.restart.coor \
   -v step6.6_equilibration.restart.vel \
   -x step6.6_equilibration.restart.xsc \
   -o step6.6_equilibration
-```
+
 
 Transfer the `.dms` files to Anton:
 
-```bash
 scp *dms ashubbar@anton3.psc.edu:/u/psc/ashubbar
-```
 
 ---
 
@@ -62,21 +53,17 @@ scp *dms ashubbar@anton3.psc.edu:/u/psc/ashubbar
 
 Load the necessary modules:
 
-```bash
 garden load viparr/4.8.5c7/bin
 garden load viparr-ffpublic/1.1.3c7/data
-```
 
 Parameterize the system:
 
-```bash
 viparr -f aa.charmm.c36m \
        -f lipid.charmm.c36 \
        -f ions.charmm36 \
        -f water.tip3p_charmm \
        step6.6_equilibration.dms \
        step6.6_equilibration.ff.dms
-```
 
 > **Optional additions:**
 > - For ATP systems: add `-f na.charmm.c36`
@@ -84,17 +71,13 @@ viparr -f aa.charmm.c36m \
 
 Build constraints:
 
-```bash
 viparr-build-constraints step6.6_equilibration.ff.dms -o step6.6_equilibration.final.dms
-```
 
 Check and verify the DMS file:
 
-```bash
 export PATH=/gdn/centos7/0001/x3/prefixes/msys/1.9.8c7__4f2dd9bf9617/bin:$PATH
 dms-info step6.6_equilibration.final.dms
 dms-dump step6.6_equilibration.final.dms > equil_dump.txt
-```
 
 ---
 
@@ -103,9 +86,9 @@ dms-dump step6.6_equilibration.final.dms > equil_dump.txt
 For each replicate (e.g., `rep1`, `rep2`, `rep3`):
 
 1. Create a directory:
-   ```bash
+
    mkdir rep1 && cd rep1
-   ```
+   
 2. Copy the following files into it:
    - All `.dms` files  
    - `base.ark`  
@@ -114,44 +97,28 @@ For each replicate (e.g., `rep1`, `rep2`, `rep3`):
    - **Run** → Update job name and working directory path  
    - **base.ark** → Set desired total simulation time
 
-> 💡 Tip: You may need to create an empty trajectory file before running:
-> ```bash
-> touch trajectory.dcd
-> ```
-
 ---
 
 ## 🚀 Step 6: Prepare and Submit Job on Anton
 
-```bash
 ./Run
 desjob list jobs <jobid>
 desjob prep <jobid>
-# or
-desjob prep /u/psc/ashubbar/{System_DIR}/{Rep#}/workdir.1
-```
+# or desjob prep /u/psc/ashubbar/{System_DIR}/{Rep#}/workdir.1
 
 Check for success:
 
-```bash
 cd workdir.1
 tail job.log
 # Look for: (v3mdsim prep was successful)
-```
 
 Submit the job:
 
-```bash
 desjob submit <jobid> --account mcb160087p
-# or
-desjob submit /u/psc/ashubbar/anton_run1/workdir.1 --account mcb160087p
-```
+# or desjob submit /u/psc/ashubbar/anton_run1/workdir.1 --account mcb160087p
 
-Monitor progress:
-
-```bash
+Monitor progress: 
 desjob list steps <jobid>
-```
 
 ---
 
@@ -159,7 +126,6 @@ desjob list steps <jobid>
 
 On your **local machine**:
 
-```bash
 ssh -X ashubbar@bridges2.psc.edu
 cd /ocean/projects/mcb160087p/ashubbar
 interact --account mcb160087p
@@ -167,21 +133,15 @@ interact --account mcb160087p
 module use /opt/packages/anton_modules
 module load anton3mc
 module load trax
-```
 
 Create a directory and copy the DCD script:
 
-```bash
 mkdir 199P_apo_1
 cp dcd.sh 199P_apo_1
 cd 199P_apo_1
-```
 
 Extract Anton output:
-
-```bash
 ./dcd.sh <jobid>
-```
 
 ---
 
@@ -196,3 +156,315 @@ Extract Anton output:
 | 5 | Prepare replicate directories |
 | 6 | Prep and submit jobs using `desjob` |
 | 7 | Retrieve and process trajectories on Bridges2 |
+
+
+VMD install
+Download the folder for linux64,untar, cd to to the untarred folder , ./config , cd scr, sudo make install
+
+CatDCD install
+1. Download catcd, untar it , scp LINUXAMD64 folder to pinnacle , go to catdcd execuatable inside this folder and chomd +x
+2. echo 'export PATH=/home/ashubbar/catdcd4.0}/bin:$PATH' >> ~/.bashrc (replace home/ashubbar/catdcd4.0 with the path to the bin folder in
+3. source ~/.bashrc
+
+
+High-quality images
+ 
+1.    	Change background color : Graphics>Colors>Display>Background>White
+2.    	Display>Check light 2 and 3
+3.    	Display>Axes>off
+4.    	Display>Rendermode>GLSL
+5.    	Graphics>Representations: create two representations , selection is either segname PROA/PROB or chain A/B ,  coloring method is color ID , choose blue (0) for one seg and red2 (29) for the other. Drawing is new cartoon ; material is glossy or edgyshiny.
+6.    	File>Render>Tachyon
+
+
+Benchmarking at Frontera:
+ssh ashubbar@frontera.tacc.utexas.edu then cdw
+nano step7_production.inp and change output to step7_production_node3 , add .restart to the set inputname, add # to numsteps & change the run to 250,000,000 ,then save.
+mv step7_production.inp step7_production_node3.inp
+copy and rename step7_production_node3.inp to make step7_production_node{4,6,8,10,12,14,16,18,20}.inp using:
+cp step7_production_node3.inp step7_production_node{4,6,8,10,12,14,16,18,20}.inp
+nano step7_production_node*.inp and change the node number in the outputName to match the file.
+cp step7_production_node3.inp step7.1.production.inp (to remake the original file ,make sure it’s step7.1.production)
+nano step7.1.production.inp and change outputName back to step7_production.
+mkdir bench
+Start running the jobs for benchmarking using:
+./run_dev step7_production_node{3,4,6}.inp step7_production_node{3,4,,6}.log {3,4,6}
+No more than 3 jobs run at the same time , once one of them gets to 10 minutes cancel it and start another one.
+Once all the jobs ran for 10 min, mv step7_production_node*.log ./bench
+Copy fig.sh and gnuplot.prm from PC to bench folder , then chmod both.
+Get the number of atoms in your system and add to : nano fig.sh
+Use both files to generate benchmark pdf that yield minimum numbers required to exceeds 75% or 80% (was done on Steph computer) , ideal # of nodes was 14 but we will use 8 as it is more accessible.
+mv step7_production_node* ./bench
+
+
+Linux
+tail/head -10 file_name.log : gives last 10 lines in specified file
+Alias: nano .bashrc (in /home/ashubbar user folder), add a line: frontera=’ssh ashubbar@....’ , source .bashrc
+install app (deb package) sudo dpkg -i file_name.deb
+To run in the background and safely close your computer: nohup <command> > <logfilename>.log 2>&1 &
+To monitor progress: tail -f <logfilename>.log
+
+To copy the same file into multiple folders:
+for d in */*; do cp ../6c0v/anton/Chol25_POPC75/1/remove_water.tcl "$d"; done
+This will copy the tcl file into all subdir of all dir the in the working dir.
+
+
+Aliasing on mac:
+Terminal > cd Desktop ,then nano .zprofile
+add a new line: alias frontera="ssh ashubbar@frontera.tacc.utexas.edu"
+source .zprofile
+
+Passwords :
+everything in the lab {olduniv}{nejma} except :
+1. Access ID: {olduniv}{nejma}{nejma}
+2. My macbook: {newuniv}{nejma}
+3. Bridges/kollman/Anton3: {olduniv}
+
+SMD
+1. I am inducing smd for IF of (6a6n POPC rep2 ,from my simulations) to transition to OF (6a6m, crystal structure), first align the two structures using align.tcl in smd folder. Use rmsd_initial.tcl to get the rmsd between the two structures (aligned OF and IF).
+2. Run create_xyz.py to get IF_to_OF.xyz file , add two lines at the top of the file and in the first total number of lines the xyz file and in the second line put #atoms.   
+3. Edit colvars.conf to have the range of the common aa between the structures to push and the desired force constant(lower fc slower and more accurate transition).
+4. Create a copy  6a6n_POPC_rep2 (that contains the files from the last step only of equilibrium simulations) , delete all the files for all the steps except for the last step’s (e.g. 7.47), delete last step’s dcd. Copy IF_to_OF.xyz and colvar.conf to this folder and edit the input file for 7.48 and add the following block right after #Integrator Parameters block
+#Colvar
+colvars on
+colvarsconfig colvars.conf
+5. Run your simulation for step7.48 as usual and monitor rmsd decrease in step7.48.production.colvars.traj
+
+
+FEP
+1. You need step5_input. pdb and .psf , step7.5.production.restart. coor ,vel and xsc. (put all in one folder and name it FEP).
+2. Put HETA_FEP and HETB_FEP folders inside FEP folder.
+3. In HETA_FEP folder : change the ligand atom selection in mark_FEP.tcl to reflect the atom group you wish to disappear/reappear (currently "segname HETA" , this is the seg of interest to be measured).
+4. run "vmd -dispdev text -e mark_FEP.tcl" to generate "ligand.fep"
+5. run "./forward.inp" and "./backward.inp" to generate 20x forward.$i.namd and 20x backward.$i.namd files
+6. Repeat step 2-5 for folder HETB_FEP ( ligand atom selection in mark_FEP.tcl would be segname HETB”
+7. Copy FEP folder to frontera and run ./run_job.sh from each HETA_FEP and HETB_FEP folders.
+8. Once the jobs are finished, run "./mk_fepout_full.sh" to generate forward_full.fepout and backward_full.fepout in both folders.
+9. Use these two files with the ParseFEP plugin in VMD (310K and BAR estimator) to obtain the binding free energy and error.
+10. Don't forget that this output is only 1/2 of the desired result! You will still need to perform a second FEP simulation of the ligand alone in a water box and then subtract the two to find the difference. 
+
+#The whole process should be repeated on one ATP in just a water box (remove protein, Mg2+, and the other ATP from the original pdb, use charmm to put it in a water box only, equilibrate as usual, and production run for 20 ns). The value we get from FEP for one ATP only will be used in the calculation of delta G of ATP binding to the protein.
+
+Restraining ATP
+1. run these in terminal (in namd folder on Pinnacle):
+exec sed -e "s/Constant \$fc/Constant 5/g" step5_input.colvar.str > restraints/step6.1_equilibration.col
+exec sed -e "s/Constant \$fc/Constant 5/g" step5_input.colvar.str > restraints/step6.2_equilibration.col
+exec sed -e "s/Constant \$fc/Constant 2/g" step5_input.colvar.str > restraints/step6.3_equilibration.col
+exec sed -e "s/Constant \$fc/Constant 1/g" step5_input.colvar.str > restraints/step6.4_equilibration.col
+exec sed -e "s/Constant \$fc/Constant 0.2/g" step5_input.colvar.str > restraints/step6.5_equilibration.col
+exec sed -e "s/Constant \$fc/Constant 0/g" step5_input.colvar.str > restraints/step6.6_equilibration.col
+2. Add your distance colvars to step6.1 through step6.6_equilibration.col (generated from the previous step , will be stored in the restraints folder) .
+3. Copy step6.1_equilibration.inp to colvars_initial.inp and change minimize and run to 0 and comment out [exec sed -e "s/Constant \$fc/Constant 5/g" step5_input.colvar.str > restraints/step6.1_equilibration.col] and numsteps. Run colvars_initial.inp (using development script) and get the centers for your colvars from step6.1_equilibration.colvars.state.
+4. Add the values of these centers to 6.1-6.6 colvar files in the restraints folder.
+5. Edit step 6.1-6.6 inp files to make the regular edits (run time, first timestep ..etc) and make sure to comment out numsteps and [exec sed -e "s/Constant \$fc/Constant number/g" step5_input.colvar.str > restraints/step6.*_equilibration.col]. Remove output files from colvars_initial.inp (except step6.1_equilibration.colvars.state where you gonna rename it to colvars_centers ) and run equilibration as usual.
+7. For production: you will need 2 additional files (colvars.conf and colvars_release.conf)
+
+A. colvars.conf is composed of 3 parts: Part I is the below two lines (this part is the same regardless of the system)
+colvarsTrajFrequency 5000 #output file frequency
+colvarsRestartFrequency 5000 #output file frequency
+Part II (membrane colvars) and III (your defined distance colvars) you will copy from restraints/step6.6_equilibration.col and paste below the two lines above.
+
+B. copy colvar.conf and name the copy colvars_release.conf , nano colvars_release.conf and add the lines in red to d1-d8
+colvar {
+name d1
+distance {
+group1 { ### index }
+
+
+
+group2 { ### index }
+}
+}
+harmonic
+name harm_d1
+colvars d1
+forceConstant 10
+centers {#####}
+targetNumSteps 1
+targetNumStages 1000000 # 1000000 = 2ns
+targetForceConstant 0.0
+
+8. Add the following to step7.1.production.inp (Run time should be 10 ns only).
+# Colvars
+colvars on
+colvarsconfig colvars.conf
+colvarsInput step6.6_equilibration.restart.colvars.state
+
+
+9. Add the following to step7.2.production.inp (Run time is the usual ).
+# Colvars
+colvars on
+colvarsconfig colvars_release.conf
+colvarsInput 7.1.production.restart.colvars.state
+
+10. Run step7.3 and above as usual.
+
+
+Making a movie
+1. Load pdb,psf and dcd , change the graphical repres as needed and go to trajectory tab in graphical repres and change the smoothening to 5 for each layer. Then align using protein and backbone options in RMSD traj tool.
+2. Extensions > Visualization > movie maker : set the working DIR , trajectory step size is the same as striding (leave it as 1 if you dont want to stride) , click on trajectory from Movie Settings tab. Then click on Make Movie.
+3. to convert from mpg to mp4 : ffmpeg -i xxx.mpg xxx.mp4
+
+Violin Plots
+1. .Edit line 10 in violin.py to use the proper column number (usecols=[2] , means it gonna use data from the third cloumn).
+3. run the python script.
+
+Probability Distributions
+1. ./probability1.sh then ./gnuplot-probability1.sh
+2. ./probability2.sh then ./gnuplot-probability2.sh
+3. For mutiplots for each , use gnuplot-distribuition in gnu multi rep folder in 6a6n/POPC.
+
+DNA-Ahmed
+To run the script you need two dcds and two pdbs in the working directory.
+conda create --name protein-analysis python=3.11
+conda activate protein-analysis
+conda install -c conda-forge mdanalysis numpy seaborn matplotlib networkx
+Run the dynamic_network_analysis.py as shown in the example in the script.
+Note: Steps 1 and 3 are only done for first-time use, for subsequent analyses you only need to do steps 2 and 4.
+
+DNA-Steph
+1. Download and install MD-TASK from Git-hub (do that inside home/ashubbar folder).
+2. Add the file calc_correlation_custom.py to the MD-TASK folder.
+3. Create a new folder named DNA with a similar setup to PCA where you have indices.sh, strip.sh plus the folders for your replicates each containing links for pdb and dcd, then run indices. sh (I ran it for Pro A and Pro B selections), then run the strip.sh.
+4. remove psf and tcl files, copy DNA.sh and plot.sh to the DNA folder.
+5. conda activate md-task (to enter MD-TASK environment).
+6. ./DNA.sh (in this script you run a Python script that uses the dcd file generated from the strip.sh and the pdb generated from indices.sh, and then generates a txt file for plotting).
+7. Create 2 folders A and B for each protomer. Copy Corr_sub_diff.py and plot.sh to both folders A and B. Copy the pdb(s)/txt files for protomer A to folder A and the pdb(s)/txt files for protomer B to folder B. then cd to folder A.
+8. Remove ca from the pdb file name (e.g. mv pgp.ca.1.POPC_1.pdb pgp.1.POPC_1.pdb) (Corr_sub_diff.py was not able to extract pgp as a key for plotting from the pdb file name because it contained ca, this step might not be necessary as I hard coded the key as shown below.
+9. Most of the problems I got were in Corr_sub_diff.py where the key had to be hard-coded as pgp in lines (16, 277, and 362) of the script.
+10 ./plot.sh then you should get pdf for the difference between rep1 vs rep2 , rep2 vs rep1 , rep3 vs rep1
+python Corr_sub_diff.py pgp.1.POPC_1.pdb pgp.1.POPC_$i.pdb POPC_1.1.txt POPC_$i.1.txt (red is your reference replicates which is typically rep1).
+11. Note V1 through V5 in res_dict in Corr_sub_diff.py are predefined regions that you define them using start and stop (e.g. start for NBD1 is 400 and stop for NBD2 is 600). Min and Max have to be your first and last aa resid of your protomer.
+
+
+PROPKA
+1. pip install propka
+2. propka3 loop6c0v_2chains.pdb
+3. nano loop6c0v_2chains.pka
+4. Make a note of all residue within 1.5 units of 7.4
+
+
+pKa and Protonation State
+If pH < pKa → The residue is protonated.
+If pH > pKa → The residue is deprotonated.
+For example:
+Aspartate (ASP) and Glutamate (GLU) → Typical pKa ≈ 3.8 - 4.5
+At pH 7: Deprotonated (-1 charge)
+At pH 3: Protonated (neutral)
+Histidine (HIS) → pKa ≈ 6.5
+At pH 7: Partially protonated (can be neutral or +1)
+At pH 5: Mostly protonated (+1 charge)
+Lysine (LYS) and Arginine (ARG) → pKa ≈ 10-12
+At pH 7: Protonated (+1 charge)
+At pH 12: Deprotonated (neutral)
+
+
+
+SASA
+1. Load pdb,psf and dcd (stride if needed) into VMD , in TK console type: source sasa.tcl , then type your selectionc and press enter.
+2. For plotting run ./gnuplot_sasa.sh
+
+
+PCA
+you need 4 scripts: indices.sh , strip.sh , eda.py and plot.sh
+In indices.sh you can do multiple selections at the same time , in strip.sh you control what dcd files to concatenate, pay attention to the order and number of frames for each dcd as wells as total number of frames.
+Run in this order : ./indices.sh , ./strip.sh , python eda.py
+Before plotting : in plot line for each graph : edit number of frames (start and the end of the dcd , marked in red) , in this example I used two dcds: POPC (2930 frames) and CholPOPC11 (1279 frames) ,during concatenation POPC was first and total number of frames was 4209 , thats why we use 0 as a starting frame and 2930 as an end frame for POPC , CholPOPC11 starts the frame after (2931) and ends at 4209.
+"< awk 'NR >= 0 && NR <= 2930 {print \$1, \$2}' projection-all.txt" using 1:2:0 with p ps 1 lt 7 palette title "POPC"
+"< awk 'NR >= 2931 && NR <= 4209 {print \$1, \$2}' projection-all.txt" using 1:2:0 with p ps 1 lt 7 palette title "CholPOPC11"
+5. ./plot.sh
+
+Multi-Selection PCA
+1. Define your five selections in indices.sh , then run indices.sh , strip.sh
+2. eda.py will be different according to selection :you have 5 edits (2 inputs:pdb source , dcd source and 3 output files: .nmd and two .txt) , eda.py has to be run five times.
+3. plot.sh has to be edited first to reflect the number of frames , then for each selection you need to do the following edits to file names .ps at top , two source .txt files in plotting line, (.ps , .epsi and .pdf ) at the bottom.
+
+
+Water Density
+You need 4 scripts: do_initail.sh , do_final.sh , plot_i.sh and plot_f.sh. Create two new Dirs (initial and final) and move do_initial and plot_i to initial folder and move the other two to final folder. Plot_both.sh if you wanna plot both at the same time.
+Open VMD, load pdb,psf and the first 30ns of your dcd. Extensions > Analysis > Volmap tool: change selection from protein to water , heck the box for compute fro all … , and click on Browse to save the file as initial.dx in initial folder. Clicke on Create map.
+Nano initial.dx and record: (1) origin coordinates(e.g. -85.5 -85.5 -111.5 for x,y and z, respectively) and (2) gridpositions counts (e.g. 172 172 224 . these are your box dimesnions). Note the origin of the box is on the edge not the center.
+Nano do_initial.sh , change M value to a number that is half of y length (e.g. 172/2=86) , rationale: for IF conform. we are visualizing z axis vs x axis , however we need to slice half of y in order to see the protein in the middle of the box. D=5 is like plus or minus 5 angstroms to be visualized.
+./do_initial.sh then ./plot_i.sh (adjust x and y range if needed).
+Repeat the same steps for the final 30ns of dcd using final scripts in final folder.
+
+
+SU used in a time period:
+1. ssh to the cluster that you want to measure your SU usage on and run the script (./su_cpu.sh {beginning date} {end date} {username}) , example: ./su_gpu.sh 2024-04-19 2024-04-26 ashubbar
+2. Note there is are seperate scipts to count SU usage for CPU and GPU.
+3. scp ahmed-04-19-2024.txt ahmed@biosimlab.ddns.uark.edu:/BSLBackup/reports (password is biosimlab321)
+
+
+RMSF Gradient: you need pdb , psf and rmsf texts for both protomers for all three replicas in the same folder
+1. nano rmsf.txt files for the 3 replicas of prot a , add space at the end of each file , repeat for prot b.
+2. copy the command from COMMAND_average and run it in the command line , repeat for prot b.
+3. nano averaged_rmsf_a and remove the space at the end, repeat for prot b.
+4. copy the command from COMMAND_highest_value and run it in the command line , write down the value.
+5. python replace_a.py , then python replace_b.py
+6. You should have two output pdb files for each protomer.
+7. Open VMD , load each pdb (as tqo seperate molecules) with psf on top , for each pdb change graphical presentation to : segname PROA (or PROB) , new cartoon , coloring: beta and go to trajectory tab within graph presentation and adjust beta to the value you wrote down then click set.
+8. Graphics>Colors>Color Scale , change method to Linear-CET_L3 , Posterize to 10
+9. on Popwer point , creat a rectangle with gradient and color to look like the color scale on VMD.
+
+
+RMSD/RMSF
+macros_pgp.tcl require for rmsd/rmsf analysis.
+nano gnuplot-rmsd.prm , the columns that are being plotted 1 (x axis) vs 3 (y axis) for the whole protein , 1 vs 4 for protomer a and 1 vs 5 for protomer b (1 is the frame column which is multiplied by 0.1 to get ns).
+./rmsd.sh then ./gnuplot-rmsd.sh
+
+Striding a dcd after concatenation:
+1. Open VMD and load pdb,psf and dcd fiels and stride.
+2. Open TK console and type : animate write dcd pgp.dcd beg 0 end -1 waitfor all
+
+
+Preparing final DCD for analysis
+1. Concatenate step6.1_equilibration,6.2 and 6.3 (stride by 20) into equ1.dcd
+2. Concatenate step6.4_equlibration,6.5 and 6.6. (stride by 10) inot equ2.dcd
+3. Concatenate dcd from step 1 , dcd from step 2 and all the production dcds into a final dcd for analysis (you can stride 
+by any value at this point).
+
+
+Notes
+1ns = 10⁶ fs, we set scripts to run for a certain number of steps (run field at the end of .inp file )and normally we define time step as 1 step = 2 fs (i.e. 500K steps =1 ns). However, in steps 1-3 of the equilibration time step is 1 step = 1 fs ( to make sure it is slow enough so that the system does not blow up (in this case 1m steps = 1 ns)
+Check the job status : squeue -u ashubbar
+Cancel a job : scancel {jobid} or scancel -u ashubbar to cancel all jobs.
+to check for idle nodes on pin: sinfo | grep gpu72 | grep idle
+To check for idle node that might be in use on pin : ssh c{node number} , then nivdia-smi ,and see if there is any process running. type logout to exit the node.
+To use a particular node add this line to your run script: #SBATCH -–nodelist=c{node number}
+Check when a job starts in Frontera: squeue --start -u ashubbar
+grep ATOM step5_input.pdb | wc : return number of atoms in your system.
+grep day step6.1_equilibration.log: returns # of days to finish a nano second.
+to check how long the simulation ran for: nano step6.1_equilibration.restart.xsc
+to check why the simulation got canceled: nano slurm_{job id}.out
+to copy a file from pin to mac: scp ashubbar@hpc-portal2.hpc.uark.edu:/{Dir path}/{File name} .
+to copy a folder from pinnacle to mac: scp -r ashubbar@hpc-portal2.hpc.uark.edu:/{Dir path/folder name} .
+Copying from Frontera : go to destination folder and type the following :
+rsync -avP ashubbar@frontera.tacc.utexas.edu:/$remotePATH/*dcd .
+to untar tgz file : tar -xvsf {archive name}.tgz
+To concatenate dcd files on pinnacle use: catdcd -o {output.dcd} -stride 10 {input1.dcd} {input2.dcd}
+to stride only: catdcd -o {strided_output.dcd} -stride 10 {input.dcd}
+to link on linux: ln -s {PATH/orginal_filename} {link_filename}
+
+
+CHARMM GUI:
+cfi file of the protein was used into CHARMM reader/manipulator to get the pdb file.
+The pdb was the then used in membrane builder (use CHARMM as input method) & following parameters were used:
+Run PPM 2.0 for orientation , both chains were selected.
+Water thickness 35.0 , Ratios of lipid contents , Length of X and Y 150 , PC lipids then POPC then 100 in each box of upper and lower leaflet and then click show the system info.
+System building: replacement method, Ion placing method :distance , NaCl 0.15.
+Force Field options : CHARMM 36m , Input generations options: More CHARMM and NAMD are both selected. Equilibration options : Generate grid information for PME FFT automatically and NPT ensemble ,temp 310 K.
+
+Equilibration
+Copy the CHARMM folder to pinnacle/Frontera, run/follow scripts , input.sh/input_generator.inp to NAMD folder and chmod 777 {script file}
+nano step6.*_equilibration.inp and:
+Add .restart to the set inputname field for 6.2 through 6.6
+Adjust first time set in 6.2-6.6 to: 1260000, 2510000, 3760000, 6260000, 8760000.
+Add an extra 0 to run field in all six files.
+./runpin_gpu step6.1_equilibration.inp step6.1_equilibration.log 1
+./followpin_gpu step6.2_equlibration.inp step6.2_equilibration.log 1 {job id of previous job} [repeat until 6.6].
+
+Production
+nano step7_production.inp : change output to step7.1.production, add .restart to the set inputname, add # to numsteps & change the run to 50,000,000
+mv step7_production.inp step7.1.production.inp
+./input.sh
+Run the script.
