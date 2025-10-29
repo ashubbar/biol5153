@@ -143,20 +143,6 @@ cd 199P_apo_1
 Extract Anton output:
 ./dcd.sh <jobid>
 
----
-
-## ✅ Summary
-
-| Step | Description |
-|------|--------------|
-| 1 | Transfer equilibration and topology files to Bridges2 |
-| 2 | Copy files to Kollman for conversion |
-| 3 | Convert NAMD restart files to `.dms` |
-| 4 | Run VIPARR on Anton to parameterize |
-| 5 | Prepare replicate directories |
-| 6 | Prep and submit jobs using `desjob` |
-| 7 | Retrieve and process trajectories on Bridges2 |
-
 
 VMD install
 Download the folder for linux64,untar, cd to to the untarred folder , ./config , cd scr, sudo make install
