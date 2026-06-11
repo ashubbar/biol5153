@@ -144,6 +144,9 @@ Extract Anton output:
 ./dcd_nowat.sh <jobid>
 
 
+you might need this to get your files downloaded from bridges
+scp -r ashubbar@data.bridges2.psc.edu:/ocean/projects/bio210066p/ashubbar/****.dcd .
+
 VMD install
 Download the folder for linux64,untar, cd to to the untarred folder , ./config , cd scr, sudo make install
 
