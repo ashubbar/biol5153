@@ -137,11 +137,11 @@ module load trax
 Create a directory and copy the DCD script:
 
 mkdir 199P_apo_1
-cp dcd.sh 199P_apo_1
+cp dcd_nowat.sh 199P_apo_1
 cd 199P_apo_1
 
 Extract Anton output:
-./dcd.sh <jobid>
+./dcd_nowat.sh <jobid>
 
 
 VMD install
