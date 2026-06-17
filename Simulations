@@ -1,5 +1,7 @@
 # Anton Simulation Setup and Transfer Guide
 
+**** to check for allocation log into Anton3 and run: projects -u ashubbar
+
 This document outlines the full workflow for transferring equilibrated NAMD systems to Anton, converting them into `.dms` format, parameterizing with VIPARR, preparing simulation directories, running jobs, and retrieving trajectories.
 
 ---
